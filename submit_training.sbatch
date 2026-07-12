@@ -39,6 +39,6 @@ cd ~/singularity_videoembedding/
 # 5. Launch our split Python training job inside your container
 # Note: --nv enables GPU hardware acceleration inside Singularity
 echo "Launching training loop execution inside Singularity container..."
-singularity exec --nv vid_embedding_image.sif python3 B.sc.video_CLIP_embedding/main.py
+singularity exec --nv vid_embedding_image.sif python3 B.sc.video_CLIP_embedding/training.py
 
 echo "=== Job finished successfully at $(date) ==="
