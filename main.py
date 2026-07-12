@@ -12,15 +12,18 @@ class ContrastiveLoss(nn.Module):
         super().__init__()
         self.temperature = temperature
         
-    def forward(self, projected_video_embeddings, target_audio_embeddings):
-        # Calculate the similarity matrix grid between all videos and all audios in the batch
-        # Resulting shape: (batch_size, batch_size)
-        logits = torch.matmul(projected_video_embeddings, target_audio_embeddings.T) / self.temperature
+def forward(self, projected_video_embeddings, target_audio_embeddings):
+        # Enforce strict 2D shapes: (Batch, 512)
+        # .view(x.size(0), -1) guarantees that no matter how the numpy array was saved,
+        # it collapses down into a clean 2D matrix.
+        z_v = projected_video_embeddings.view(projected_video_embeddings.size(0), -1)
+        z_a = target_audio_embeddings.view(target_audio_embeddings.size(0), -1)
         
-        # Ground truth targets are along the main diagonal (index matching itself)
+        # Safe matrix multiplication using .t() for 2D transpose
+        logits = torch.matmul(z_v, z_a.t()) / self.temperature
+        
         labels = torch.arange(logits.shape[0]).to(logits.device)
         
-        # Cross entropy minimizes distance for true pairs and maximizes for negatives
         loss_v2a = F.cross_entropy(logits, labels)
         loss_a2v = F.cross_entropy(logits.T, labels)
         
