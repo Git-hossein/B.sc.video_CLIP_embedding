@@ -12,7 +12,7 @@ class ContrastiveLoss(nn.Module):
         super().__init__()
         self.temperature = temperature
         
-def forward(self, projected_video_embeddings, target_audio_embeddings):
+    def forward(self, projected_video_embeddings, target_audio_embeddings):
         # Enforce strict 2D shapes: (Batch, 512)
         # .view(x.size(0), -1) guarantees that no matter how the numpy array was saved,
         # it collapses down into a clean 2D matrix.
