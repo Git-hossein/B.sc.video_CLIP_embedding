@@ -43,7 +43,7 @@ def main():
     # Initialize frozen HuggingFace Vision Backbone
     clip_model_name = "openai/clip-vit-base-patch32"
     processor = CLIPProcessor.from_pretrained(clip_model_name)
-    clip_vision_tower = CLIPVisionModel.from_pretrained(clip_model_name).to(device)
+    clip_vision_tower = CLIPVisionModel.from_pretrained(clip_model_name, use_safetensors=True).to(device)
     clip_vision_tower.eval()
     
     # Initialize Datasets and Loaders
@@ -53,7 +53,7 @@ def main():
     train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True, collate_fn=safe_collate_fn, num_workers=4)
     val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False, collate_fn=safe_collate_fn, num_workers=4)
     
-    model = VideoAudioAttentionBridge().to(device)
+    model = VideoAudioAttentionBridge(clip_dim=768).to(device)
     optimizer = torch.optim.AdamW(model.parameters(), lr=1e-4, weight_decay=1e-2)
     criterion = ContrastiveLoss()
     
