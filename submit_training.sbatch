@@ -16,18 +16,16 @@ echo "=== Allocation ID: $SLURM_JOB_ID ==="
 echo "Creating fast local scratch directories..."
 mkdir -p /scratch/$SLURM_JOB_ID/vggsound_train_frames
 mkdir -p /scratch/$SLURM_JOB_ID/vggsound_val_frames
-mkdir -p /scratch/$SLURM_JOB_ID/vggsound_train_audio
-mkdir -p /scratch/$SLURM_JOB_ID/vggsound_val_audio
 
 # 2. Extract the Audio Embeddings into Scratch
 echo "Unpacking audio embeddings into scratch..."
-tar -xf ~/vggsound_train_audio_embeddings.tar -C /scratch/$SLURM_JOB_ID/vggsound_train_audio/ --strip-components=1
-tar -xf ~/vggsound_val_audio_embeddings.tar -C /scratch/$SLURM_JOB_ID/vggsound_val_audio/ --strip-components=1
+cp -r ~/train_audio_embeddings /scratch/$SLURM_JOB_ID/
+cp -r ~/val_audio_embeddings  /scratch/$SLURM_JOB_ID/ 
 
 # 3. Extract the Image Frames into Scratch
 echo "Unpacking video frame tarballs into scratch (this may take a few minutes)..."
-tar -xf ~/vggsound_train_5k.tar -C /scratch/$SLURM_JOB_ID/vggsound_train_frames/ --strip-components=1
-tar -xf ~/vggsound_val_5k.tar -C /scratch/$SLURM_JOB_ID/vggsound_val_frames/ --strip-components=1
+tar -xf ~/vggsound_train_frames.tar -C /scratch/$SLURM_JOB_ID/vggsound_train_frames/ --strip-components=1
+tar -xf ~/vggsound_val_frames.tar -C /scratch/$SLURM_JOB_ID/vggsound_val_frames/ --strip-components=1
 
 echo "Data extraction complete! Verifying contents..."
 echo "Train videos count: $(ls /scratch/$SLURM_JOB_ID/vggsound_train_frames | wc -l)"

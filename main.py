@@ -37,8 +37,8 @@ def main():
     # Paths pointing to Node-Local ultra fast scratch spaces
     TRAIN_FRAMES = f"/scratch/{job_id}/vggsound_train_frames"
     VAL_FRAMES = f"/scratch/{job_id}/vggsound_val_frames"
-    TRAIN_AUDIO = f"/scratch/{job_id}/vggsound_train_audio"
-    VAL_AUDIO = f"/scratch/{job_id}/vggsound_val_audio"
+    TRAIN_AUDIO = f"/scratch/{job_id}/train_audio_embeddings"
+    VAL_AUDIO = f"/scratch/{job_id}/val_audio_embeddings"
     
     # Initialize frozen HuggingFace Vision Backbone
     clip_model_name = "openai/clip-vit-base-patch32"
@@ -96,7 +96,7 @@ def main():
         
         with torch.no_grad():
             for batch in val_loader:
-                if batch is None: continue
+                if not batch: continue
                 
                 pixel_values = batch["pixel_values"].to(device)
                 audio_embeddings = batch["audio_embedding"].to(device)

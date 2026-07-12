@@ -94,7 +94,7 @@ def safe_collate_fn(batch):
     
     # If a batch accidentally ends up completely empty, handle gracefully
     if len(batch) == 0:
-        return None
+        return {}
         
     return {
         "video_id": [item["video_id"] for item in batch],
