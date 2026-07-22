@@ -53,11 +53,11 @@ def main():
     train_dataset = VGGSoundFrameDataset(TRAIN_FRAMES, TRAIN_AUDIO, processor)
     val_dataset = VGGSoundFrameDataset(VAL_FRAMES, VAL_AUDIO, processor)
     
-    train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True, collate_fn=safe_collate_fn, num_workers=4)
-    val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False, collate_fn=safe_collate_fn, num_workers=4)
+    train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True, collate_fn=safe_collate_fn, num_workers=4)
+    val_loader = DataLoader(val_dataset, batch_size=64, shuffle=False, collate_fn=safe_collate_fn, num_workers=4)
     
     model = VideoAudioAttentionBridge(clip_dim=768).to(device)
-    optimizer = torch.optim.AdamW(model.parameters(), lr=1e-4, weight_decay=1e-2)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=3e-5, weight_decay=0.05)
     criterion = ContrastiveLoss()
     
     for epoch in range(10):

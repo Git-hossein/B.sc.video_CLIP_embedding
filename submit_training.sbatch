@@ -1,13 +1,14 @@
 #!/bin/bash
 #SBATCH --job-name="vggsound_attention_train"
 #SBATCH --partition=day
-#SBATCH --time=12:00:00                     # Giving it 12 hours max (adjust as needed)
-#SBATCH --gres=gpu:2080ti:1                 # Requesting 1 GPU (2080ti or A4000 work well)
+#SBATCH --time=24:00:00                     # Giving it 12 hours max (adjust as needed)
+#SBATCH --gres=gpu:A4000:1                  # Requests 1x A4000 GPU (Fallback: gpu:2080ti:1)
 #SBATCH --cpus-per-task=4                   # Matches our DataLoader num_workers=4
-#SBATCH --mem=45G                           # 45GB RAM is perfect for processing image batches
+#SBATCH --mem=60G                           # 45GB RAM is perfect for processing image batches
 #SBATCH --output=%x_%j.log       # Clean standard prints go here
 #SBATCH --error=%x_%j.err        # All structural error dumps go here!
-
+#SBATCH --mail-type=ALL
+#SBATCH --mail-user=hossein.sherkat@uni-tuebingen.de # your e-mail 
 
 # Exit immediately if any command fails
 set -e
