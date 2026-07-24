@@ -8,7 +8,7 @@
 #SBATCH --output=%x_%j.log       # Clean standard prints go here
 #SBATCH --error=%x_%j.err        # All structural error dumps go here!
 #SBATCH --mail-type=ALL
-#SBATCH --mail-user=hossein.sherkat@uni-tuebingen.de # your e-mail 
+#SBATCH --mail-user=hossein.sherkat@student.uni-tuebingen.de # your e-mail 
 
 # Exit immediately if any command fails
 set -e
