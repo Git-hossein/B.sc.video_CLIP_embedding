@@ -7,29 +7,26 @@ from pipeline_utils import VGGSoundFrameDataset, safe_collate_fn, VideoAudioAtte
 import os
 
 
-class ContrastiveLoss(nn.Module):
-    def __init__(self, temperature=0.07):
+class LearnableContrastiveLoss(nn.Module):
+    def __init__(self, init_temperature=0.07):
         super().__init__()
-        self.temperature = temperature
-        
+        self.temperature = init_temperature
+        self.logit_scale = nn.Parameter(torch.ones([]) * torch.log(torch.tensor(1.0 / init_temperature)))
+
     def forward(self, projected_video_embeddings, target_audio_embeddings):
-        # Enforce strict 2D shapes: (Batch, 512)
-        z_v = projected_video_embeddings.view(projected_video_embeddings.size(0), -1)
-        z_a = target_audio_embeddings.view(target_audio_embeddings.size(0), -1)
-        
-        # Normalize embeddings to unit length for stable cosine contrastive learning
-        z_v = F.normalize(z_v, p=2, dim=-1)
-        z_a = F.normalize(z_a, p=2, dim=-1)
-        
-        # Safe matrix multiplication using .t() for 2D transpose
-        logits = torch.matmul(z_v, z_a.t()) / self.temperature
-        
-        labels = torch.arange(logits.shape[0]).to(logits.device)
-        
-        loss_v2a = F.cross_entropy(logits, labels)
-        loss_a2v = F.cross_entropy(logits.T, labels)
-        
-        return (loss_v2a + loss_a2v) / 2
+            z_v = F.normalize(projected_video_embeddings.view(projected_video_embeddings.size(0), -1), p=2, dim=-1)
+            z_a = F.normalize(target_audio_embeddings.view(target_audio_embeddings.size(0), -1), p=2, dim=-1)
+            
+            # Clamp logit scale so temperature never drops below 0.01 (scale 100) or above 1.0 (scale 1)
+            logit_scale = self.logit_scale.exp().clamp(max=100.0)
+            
+            logits = logit_scale * torch.matmul(z_v, z_a.t())
+            labels = torch.arange(logits.shape[0]).to(logits.device)
+            
+            loss_v2a = F.cross_entropy(logits, labels)
+            loss_a2v = F.cross_entropy(logits.T, labels)
+            
+            return (loss_v2a + loss_a2v) / 2
     
 
 def main():
@@ -58,11 +55,26 @@ def main():
     val_loader = DataLoader(val_dataset, batch_size=64, shuffle=False, collate_fn=safe_collate_fn, num_workers=4, pin_memory=True)
     
     model = VideoAudioAttentionBridge(clip_dim=768).to(device)
-    optimizer = torch.optim.AdamW(model.parameters(), lr=3e-5, weight_decay=0.05)
+    criterion = LearnableContrastiveLoss(init_temperature=0.07).to(device)
     
-    num_epochs = 10
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=num_epochs, eta_min=1e-6)
-    criterion = ContrastiveLoss(temperature=0.07)
+    checkpoint_path = os.path.expanduser("~/singularity_videoembedding/attention_bridge_epoch_10.pt")
+    resumed = False
+    if os.path.exists(checkpoint_path):
+        model.load_state_dict(torch.load(checkpoint_path, map_location=device))
+        print("--> Successfully loaded weights from Epoch 10! Resuming for 20 more epochs...")
+        resumed = True
+    else:
+        print("--> No existing checkpoint found. Starting fresh from Epoch 1...")
+
+    optimizer = torch.optim.AdamW(
+    list(model.parameters()) + list(criterion.parameters()), 
+    lr=1.5e-5 if resumed else 3e-5,  # Start gentler if resuming from Epoch 10!
+    weight_decay=0.05
+    )
+
+    num_epochs = 20 if resumed else 30
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=num_epochs, eta_min=3e-6)
+
     
     best_val_loss = float("inf")
     
@@ -148,8 +160,10 @@ def main():
         # Step LR scheduler
         scheduler.step()
         current_lr = optimizer.param_groups[0]['lr']
-        
-        print(f"Epoch {epoch+1:02d}/{num_epochs:02d} | Train Loss: {avg_train_loss:.4f} | Val Loss: {avg_val_loss:.4f} | LR: {current_lr:.6f}")
+
+        with torch.no_grad():
+            current_temp = (1.0 / criterion.logit_scale.exp()).item()
+        print(f"Epoch {epoch+1:02d}/{num_epochs:02d} | Train Loss: {avg_train_loss:.4f} | Val Loss: {avg_val_loss:.4f} | | Temp: {current_temp:.4f}| LR: {current_lr:.6f}")
         
         # Save regular epoch checkpoint
         torch.save(model.state_dict(), f"attention_bridge_epoch_{epoch+1}.pt")
